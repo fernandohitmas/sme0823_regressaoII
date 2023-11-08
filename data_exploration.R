@@ -6,15 +6,17 @@ dt <- fread("./data/heart.csv")
 
 p <- ncol(dt)
 
-cat(colnames(dt),sep='}\n\\item \\textit{')
+cat(colnames(dt), sep = ', ')
 
 # Valore unicos por variavel
-lapply(dt, unique)
+print(lapply(dt, unique))
 
 # boxplot
-hist(dt[[4]])
+for (i in 1:p) {
+  hist(dt[[i]])
+}
 
 plot(table(dt[[3]]))
 
 
-hist(dt[,])
+hist(dt[[1]])
