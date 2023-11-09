@@ -1,6 +1,7 @@
 library(data.table)
 library(ggplot2)
 
+
 # FUNCOES ----
 grafico_barra <- function(data, )
 
