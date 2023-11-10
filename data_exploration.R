@@ -1,9 +1,8 @@
 library(data.table)
 library(ggplot2)
 library(scales)
-
-# FUNCOES ----
-grafico_barra <- function(data, )
+library(egg)
+library(gridExtra)
 
 # Leitura de Dados ----
 dt <- fread("./data/heart.csv")
@@ -13,116 +12,19 @@ p <- ncol(dt)
 cat(colnames(dt), sep = ', ')
 
 # Valore unicos por variavel
-print(lapply(dt, unique))
+print(lapply(lapply(dt, unique),sort))
+
+# Retirada de valores com zero em RestingBP e Cholesterol
+dt <- dt[RestingBP != 0 & Cholesterol !=0 & Oldpeak > 0] # https://d-nb.info/1242792767/34
 
 # Tranformacao para variavel categorica
 dt[,c(2,3,6,7,9,11,12)] <- lapply(dt[,c(2,3,6,7,9,11,12)], as.factor)
 
 
 # Histogramas e graficos de barra ----
-
-# Grafico de variaveis categoricas----
-# Grafico de Sexo
-g1 <- ggplot(dt,aes(x =Sex)) +
-  geom_bar(color = 'black') +
-  geom_text(
-    aes(
-      y=after_stat(count) + 20,
-      label = after_stat(count)
-      ),
-    stat = "count") + 
-  xlab("Sexo") + 
-  ylab("Contagem") +
-  ggtitle("Contagem de Observações por Sexo",)+
-  theme(
-    plot.title=element_text( hjust=0.5, vjust=0.5, face='bold')
-  )
-ggsave("./images/Contagem")
-
-# Grafico de Dores
-ggplot(dt,aes(x = ChestPainType)) +
-  geom_bar(color = 'black') +
-  geom_text(
-    aes(
-      y=after_stat(count) + 20,
-      label = after_stat(count)
-    ),
-    stat = "count") + 
-  xlab("Tipo de Dor") + 
-  ylab("Contagem") +
-  ggtitle("Contagem de Observações por Tipo de Dor no Peito",)+
-  theme(
-    plot.title=element_text( hjust=0.5, vjust=0.5, face='bold')
-  )
-
-# Glicose no Sangue em Jejum
-ggplot(dt,aes(x = FastingBS)) +
-  geom_bar(color = 'black') +
-  geom_text(
-    aes(
-      y=after_stat(count) + 20,
-      label = after_stat(count)
-    ),
-    stat = "count") + 
-  xlab("Indicador de Diabetes") + 
-  ylab("Contagem") +
-  ggtitle("Contagem de Observações com idicativo de diabetes",)+
-  theme(
-    plot.title=element_text( hjust=0.5, vjust=0.5, face='bold')
-  )
-
-# Eletrocardiograma em Repouso  
-ggplot(dt,aes(x = RestingECG)) +
-  geom_bar(color = 'black') +
-  geom_text(
-    aes(
-      y=after_stat(count) + 20,
-      label = after_stat(count)
-    ),
-    stat = "count") + 
-  xlab("Resultados do ECG") + 
-  ylab("Contagem") +
-  ggtitle("Contagem de Observações para os resultados do ECG",)+
-  theme(
-    plot.title=element_text( hjust=0.5, vjust=0.5, face='bold')
-  )
-
-# Declive do segmento ST
-ggplot(dt,aes(x = ST_Slope)) +
-  geom_bar(color = 'black') +
-  geom_text(
-    aes(
-      y=after_stat(count) + 20,
-      label = after_stat(count)
-    ),
-    stat = "count") + 
-  xlab("Tipos de declive do ST") + 
-  ylab("Contagem") +
-  ggtitle("Contagem de Observações para os resultados de declive do ST",)+
-  theme(
-    plot.title=element_text( hjust=0.5, vjust=0.5, face='bold')
-  )
-
-# Indicador de doenca cardiaca
-ggplot(dt,aes(x = HeartDisease)) +
-  geom_bar(color = 'black') +
-  geom_text(
-    aes(
-      y=after_stat(count) + 20,
-      label = after_stat(count)
-    ),
-    stat = "count") + 
-  xlab("Indicador de Doença Cardíaca") + 
-  ylab("Contagem") +
-  ggtitle("Contagem de Observações do indicador de Doença Cardíaca",)+
-  theme(
-    plot.title=element_text( hjust=0.5, vjust=0.5, face='bold')
-  )
-
-
 # Grafico de variaveis continuas ----
 
-ggplot(dt, aes(x = Age, fill = HeartDisease)) +
+c1 <- ggplot(dt, aes(x = Age, fill = HeartDisease)) +
   geom_histogram(color = 'black', bins=15) +
   scale_x_continuous(
     name="Idade",
@@ -130,10 +32,201 @@ ggplot(dt, aes(x = Age, fill = HeartDisease)) +
     breaks = scales::pretty_breaks(n = 10)) +
   scale_y_continuous(
     name="Contagem",
-    limits=c(0, 180),
+    limits=c(0, 150),
     breaks = scales::pretty_breaks(n = 9)) +
   ggtitle("Histograma das Observações para variável Idade",)+
   theme(
-    plot.title=element_text( hjust=0.5, vjust=0.5, face='bold')
+    plot.title=element_text( hjust=0.5, vjust=0.5, face='bold'),
+    legend.position = "bottom"
   )
-ggsave("./images/hist_idade.jpeg")
+
+c2 <- ggplot(dt, aes(x = Cholesterol, fill = HeartDisease)) +
+  geom_histogram(color = 'black', bins=15) +
+  scale_x_continuous(
+    name="Idade",
+    limits=c(0, 650),
+    breaks = scales::pretty_breaks(n = 10)) +
+  scale_y_continuous(
+    name="Contagem",
+    limits=c(0, 300),
+    breaks = scales::pretty_breaks(n = 10)) +
+  ggtitle("Histograma das Observações para variável Idade",)+
+  theme(
+    plot.title=element_text( hjust=0.5, vjust=0.5, face='bold'),
+    legend.position = "bottom"
+  )
+
+c3 <- ggplot(dt, aes(x = RestingBP, fill = HeartDisease)) +
+  geom_histogram(color = 'black', bins=15) +
+  scale_x_continuous(
+    name="Idade",
+    limits=c(80, 220),
+    breaks = scales::pretty_breaks(n = 10)) +
+  scale_y_continuous(
+    name="Contagem",
+    limits=c(0, 180),
+    breaks = scales::pretty_breaks(n = 10)) +
+  ggtitle("Histograma das Observações para variável Idade",)+
+  theme(
+    plot.title=element_text( hjust=0.5, vjust=0.5, face='bold'),
+    legend.position = "bottom"
+  )
+
+c4 <- ggplot(dt, aes(x = MaxHR, fill = HeartDisease)) +
+  geom_histogram(color = 'black', bins=15) +
+  scale_x_continuous(
+    name="Idade",
+    limits=c(50, 220),
+    breaks = scales::pretty_breaks(n = 10)) +
+  scale_y_continuous(
+    name="Contagem",
+    limits=c(0, 80),
+    breaks = scales::pretty_breaks(n = 10)) +
+  ggtitle("Histograma das Observações para variável Idade",)+
+  theme(
+    plot.title=element_text( hjust=0.5, vjust=0.5, face='bold'),
+    legend.position = "bottom"
+  )
+
+c5 <- ggplot(dt, aes(x = Oldpeak, fill = HeartDisease)) +
+  geom_histogram(color = 'black', bins = 15) +
+  scale_x_continuous(
+    name="Idade",
+    limits=c(0, 7),
+    breaks = scales::pretty_breaks(n = 10)) +
+  scale_y_continuous(
+    name="Contagem",
+    limits=c(0, 120),
+    breaks = scales::pretty_breaks(n = 10)) +
+  ggtitle("Histograma das Observações para variável Idade",)+
+  theme(
+    plot.title=element_text( hjust=0.5, vjust=0.5, face='bold'),
+    legend.position = "bottom"
+  )
+grid2 <- grid.arrange(c1, c2,c3,c4,c5, nrow = 2,ncol=3s)
+ggsave("./images/grid2.jpeg", grid2, width = 50, height = 28, units = "cm")
+
+
+
+# Grafico de variaveis categoricas----
+# Grafico de Sexo
+g1 <- ggplot(dt,aes(x =Sex, fill=HeartDisease)) +
+  theme_bw() + 
+  geom_bar(color = 'black') +
+  geom_text(
+    aes(
+      y=after_stat(count) + 10,
+      label = after_stat(count)
+      ),
+    stat = "count",
+    position = "stack"
+    ) + 
+  xlab("Sexo") + 
+  ylab("Contagem") +
+  ggtitle("Observações por Sexo",)+
+  theme(
+    plot.title=element_text( hjust=0.5, vjust=0.5, face='bold'),
+    legend.position = "bottom"
+  )
+
+# Grafico de Dores
+g2 <- ggplot(dt,aes(x = ChestPainType, fill=HeartDisease)) +
+  theme_bw()+
+  geom_bar(color = 'black') +
+  geom_text(
+    aes(
+      y=after_stat(count) + 10,
+      label = after_stat(count)
+    ),
+    stat = "count",
+    position = "stack"
+  ) + 
+  xlab("Tipo de Dor") + 
+  ylab("Contagem") +
+  ggtitle("Observações por Tipo de Dor no Peito",)+
+  theme(
+    plot.title=element_text( hjust=0.5, vjust=0.5, face='bold'),
+    legend.position = "bottom"
+  )
+# Glicose no Sangue em Jejum
+g3 <- ggplot(dt,aes(x = FastingBS, fill=HeartDisease)) +
+  theme_bw()+
+  geom_bar(color = 'black') +
+  geom_text(
+    aes(
+      y=after_stat(count) + 10,
+      label = after_stat(count)
+    ),
+    stat = "count",
+    position = "stack"
+  ) + 
+  xlab("Indicador de Diabetes") + 
+  ylab("Contagem") +
+  ggtitle("Observações com idicativo de diabetes",)+
+  theme(
+    plot.title=element_text( hjust=0.5, vjust=0.5, face='bold'),
+    legend.position = "bottom"
+  )
+
+# Eletrocardiograma em Repouso  
+g4 <- ggplot(dt,aes(x = RestingECG, fill=HeartDisease)) +
+  theme_bw()+
+  geom_bar(color = 'black') +
+  geom_text(
+    aes(
+      y=after_stat(count) + 10,
+      label = after_stat(count)
+    ),
+    stat = "count",
+    position = "stack"
+  ) + 
+  xlab("Resultados do ECG") + 
+  ylab("Contagem") +
+  ggtitle("Observações para os resultados do ECG",)+
+  theme(
+    plot.title=element_text( hjust=0.5, vjust=0.5, face='bold'),
+    legend.position = "bottom"
+  )
+
+# Declive do segmento ST
+g5 <- ggplot(dt,aes(x = ST_Slope, fill=HeartDisease)) +
+  theme_bw()+
+  geom_bar(color = 'black') +
+  geom_text(
+    aes(
+      y=after_stat(count) + 10,
+      label = after_stat(count)
+    ),
+    stat = "count",
+    position = "stack"
+  ) + 
+  xlab("Tipos de declive do ST") + 
+  ylab("Contagem") +
+  ggtitle("Observações para os resultados de declive do ST",)+
+  theme(
+    plot.title=element_text( hjust=0.5, vjust=0.5, face='bold'),
+    legend.position = "bottom"
+  )
+
+# Indicador de doenca cardiaca
+g6 <- ggplot(dt,aes(x = HeartDisease, fill=HeartDisease)) +
+  theme_bw()+
+  geom_bar(color = 'black') +
+  geom_text(
+    aes(
+      y=after_stat(count) + 10,
+      label = after_stat(count)
+    ),
+    stat = "count",
+    position = "stack"
+  ) + 
+  xlab("Indicador de Doença Cardíaca") + 
+  ylab("Contagem") +
+  ggtitle("Observações do indicador de Doença Cardíaca",)+
+  theme(
+    plot.title=element_text( hjust=0.5, vjust=0.5, face='bold'),
+    legend.position = "bottom"
+  )
+
+grid1 <- grid.arrange(g1, g2,g3,g4,g5,g6, nrow = 2,ncol=3)
+ggsave("./images/grid1.jpeg", grid1, width = 50, height = 28, units = "cm")
