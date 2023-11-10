@@ -7,7 +7,7 @@ library(woe)
 
 # LEITURA DOS DADOS ----
 dt <- fread("./data/heart.csv")
-
+    
 colnames(dt)
 
 # Tranformacao para variavel categorica ----
