@@ -1,6 +1,6 @@
 library(data.table)
 library(ggplot2)
-
+library(scales)
 
 # FUNCOES ----
 grafico_barra <- function(data, )
@@ -20,8 +20,10 @@ dt[,c(2,3,6,7,9,11,12)] <- lapply(dt[,c(2,3,6,7,9,11,12)], as.factor)
 
 
 # Histogramas e graficos de barra ----
+
+# Grafico de variaveis categoricas----
 # Grafico de Sexo
-ggplot(dt,aes(x =Sex)) +
+g1 <- ggplot(dt,aes(x =Sex)) +
   geom_bar(color = 'black') +
   geom_text(
     aes(
@@ -35,6 +37,7 @@ ggplot(dt,aes(x =Sex)) +
   theme(
     plot.title=element_text( hjust=0.5, vjust=0.5, face='bold')
   )
+ggsave("./images/Contagem")
 
 # Grafico de Dores
 ggplot(dt,aes(x = ChestPainType)) +
@@ -116,3 +119,21 @@ ggplot(dt,aes(x = HeartDisease)) +
     plot.title=element_text( hjust=0.5, vjust=0.5, face='bold')
   )
 
+
+# Grafico de variaveis continuas ----
+
+ggplot(dt, aes(x = Age, fill = HeartDisease)) +
+  geom_histogram(color = 'black', bins=15) +
+  scale_x_continuous(
+    name="Idade",
+    limits=c(20, 80),
+    breaks = scales::pretty_breaks(n = 10)) +
+  scale_y_continuous(
+    name="Contagem",
+    limits=c(0, 180),
+    breaks = scales::pretty_breaks(n = 9)) +
+  ggtitle("Histograma das Observações para variável Idade",)+
+  theme(
+    plot.title=element_text( hjust=0.5, vjust=0.5, face='bold')
+  )
+ggsave("./images/hist_idade.jpeg")
