@@ -7,8 +7,12 @@ library(gridExtra)
 # Leitura de Dados ----
 dt <- fread("./data/heart.csv")
 
-p <- ncol(dt)
+# Numero de variveis independentes (p) e numero de linhas (n)
+p <- ncol(dt)-1
+n <- nrow(dt)
 
+# Categoricas: Sex, ChestPainType, FastingBS, RestingECG, ExerciseAngina, ST_Slope, HeartDisease
+# Continuas: Age, RestingBP, Cholesterol, MaxHR, Oldpeak
 cat(colnames(dt), sep = ', ')
 
 # Valore unicos por variavel
@@ -103,7 +107,7 @@ c5 <- ggplot(dt, aes(x = Oldpeak, fill = HeartDisease)) +
     plot.title=element_text( hjust=0.5, vjust=0.5, face='bold'),
     legend.position = "bottom"
   )
-grid2 <- grid.arrange(c1, c2,c3,c4,c5, nrow = 2,ncol=3s)
+grid2 <- grid.arrange(c1, c2,c3,c4,c5, nrow = 2,ncol=3)
 ggsave("./images/grid2.jpeg", grid2, width = 50, height = 28, units = "cm")
 
 
