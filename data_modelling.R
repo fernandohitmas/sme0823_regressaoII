@@ -28,18 +28,18 @@ dt <- dt[RestingBP != 0 & Cholesterol !=0 & Oldpeak > 0] # https://d-nb.info/124
 dt[,c(2,3,6,7,9,11,12)] <- lapply(dt[,c(2,3,6,7,9,11,12)], as.factor)
 
 # Selecao de variaveis (IV e GAIC)
-IV <- data <- data.table(Age=numeric(), RestingBP=numeric(), Cholesterol=numeric(), MaxHR=numeric(), Oldpeak=numeric())
-IV
 iv_age <- woe(Data=dt, Independent="Age", Continuous=TRUE, Dependent="HeartDisease", C_Bin=10, Bad=0, Good=1)[,c("MIN", "MAX", "IV")]
 iv_restingbp <- woe(Data=dt, Independent="RestingBP", Continuous=TRUE, Dependent="HeartDisease", C_Bin=10, Bad=0, Good=1)[,c("MIN", "MAX", "IV")]
 iv_choles <- woe(Data=dt, Independent="Cholesterol", Continuous=TRUE, Dependent="HeartDisease", C_Bin=10, Bad=0, Good=1)[,c("MIN", "MAX", "IV")]
 iv_maxhr <- woe(Data=dt, Independent="MaxHR", Continuous=TRUE, Dependent="HeartDisease", C_Bin=10, Bad=0, Good=1)[,c("MIN", "MAX", "IV")]
 iv_oldpeak <- woe(Data=dt, Independent="Oldpeak", Continuous=TRUE, Dependent="HeartDisease", C_Bin=10, Bad=0, Good=1)[,c("MIN", "MAX", "IV")]
 
-#IV <- cbind(iv_age, iv_restingbp, iv_choles, iv_maxhr, iv_oldpeak)
-
 # faz arquivo .tex da tabela 
-print(xtable(IV, type = "latex"), file = "iv.tex")
+print(xtable(iv_age, type = "latex"), file = "iv_age.tex")
+print(xtable(iv_restingbp, type = "latex"), file = "iv_restingbp.tex")
+print(xtable(iv_choles, type = "latex"), file = "iv_choles.tex")
+print(xtable(iv_maxhr, type = "latex"), file = "iv_maxhr.tex")
+print(xtable(iv_oldpeak, type = "latex"), file = "iv_oldpeak.tex")
 
 woe(Data=mtcars,"cyl",FALSE,"am",10,Bad=0,Good=1)
 model <- gamlss(HeartDisease ~ Sex*ChestPainType, data = dt)
