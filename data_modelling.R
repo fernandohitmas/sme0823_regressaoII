@@ -41,9 +41,24 @@ print(xtable(iv_choles, type = "latex"), file = "iv_choles.tex")
 print(xtable(iv_maxhr, type = "latex"), file = "iv_maxhr.tex")
 print(xtable(iv_oldpeak, type = "latex"), file = "iv_oldpeak.tex")
 
-woe(Data=mtcars,"cyl",FALSE,"am",10,Bad=0,Good=1)
-model <- gamlss(HeartDisease ~ Sex*ChestPainType, data = dt)
-gamlss::stepGAIC(model,HeartDisease ~.)
+
+sum(iv_age$IV)
+sum(iv_restingbp$IV)
+# IV colesterol < 0.1
+sum(iv_choles$IV)
+sum(iv_maxhr$IV)
+# IV oldpeak > 1
+# é a leitura do cardiograma e é coerente que esteja
+# relacionado com a presença de doença
+sum(iv_oldpeak$IV)
 
 
 
+#woe(Data=mtcars,"cyl",FALSE,"am",10,Bad=0,Good=1)
+model <- gamlss(HeartDisease ~ Sex*ChestPainType, data = dt, family = BI(mu.link=probit))
+gamlss::stepGAIC(model,
+                 scope = c(lower = ~ 1,
+                           upper = ~ Age + RestingBP + FastingBS + 
+                           RestingECG + MaxHR + ExerciseAngina + 
+                           oldpeak + ST_Slope + Sex*ChestPainType),
+                 direction = "forward")
