@@ -66,11 +66,21 @@ dt <- dt[,c("Age","RestingBP", "Cholesterol", "FastingBS", "MaxHR", "Oldpeak",
 
 
 # Selecao de variaveis (IV e GAIC)
+# Categoricas: Sex, ChestPainType, FastingBS, RestingECG, ExerciseAngina, ST_Slope, HeartDisease
+# Continuas: Age, RestingBP, Cholesterol, MaxHR, Oldpeak
+
 iv_age <- woe(Data=dt, Independent="Age", Continuous=TRUE, Dependent="HeartDisease", C_Bin=10, Bad=0, Good=1)[,c("MIN", "MAX", "IV")]
 iv_restingbp <- woe(Data=dt, Independent="RestingBP", Continuous=TRUE, Dependent="HeartDisease", C_Bin=10, Bad=0, Good=1)[,c("MIN", "MAX", "IV")]
 iv_choles <- woe(Data=dt, Independent="Cholesterol", Continuous=TRUE, Dependent="HeartDisease", C_Bin=10, Bad=0, Good=1)[,c("MIN", "MAX", "IV")]
 iv_maxhr <- woe(Data=dt, Independent="MaxHR", Continuous=TRUE, Dependent="HeartDisease", C_Bin=10, Bad=0, Good=1)[,c("MIN", "MAX", "IV")]
 iv_oldpeak <- woe(Data=dt, Independent="Oldpeak", Continuous=TRUE, Dependent="HeartDisease", C_Bin=10, Bad=0, Good=1)[,c("MIN", "MAX", "IV")]
+
+iv_sex <- woe(Data=dt, Independent="Sex_fct", Continuous=FALSE, Dependent="HeartDisease", C_Bin=10, Bad=0, Good=1)[,c("BIN", "IV")]
+iv_chest_pain <- woe(Data=dt, Independent="ChestPainType", Continuous=FALSE, Dependent="HeartDisease", C_Bin=10, Bad=0, Good=1)[,c("BIN", "IV")]
+iv_fasting <- woe(Data=dt, Independent="FastingBS", Continuous=FALSE, Dependent="HeartDisease", C_Bin=10, Bad=0, Good=1)[,c("BIN", "IV")]
+iv_restECG <- woe(Data=dt, Independent="RestingECG", Continuous=FALSE, Dependent="HeartDisease", C_Bin=10, Bad=0, Good=1)[,c("BIN", "IV")]
+iv_exc_angi <- woe(Data=dt, Independent="ExerciseAngina", Continuous=FALSE, Dependent="HeartDisease", C_Bin=10, Bad=0, Good=1)[,c("BIN", "IV")]
+iv_ST_slope <- woe(Data=dt, Independent="ChestPainASY", Continuous=FALSE, Dependent="HeartDisease", C_Bin=10, Bad=0, Good=1)[,c("BIN", "IV")]
 
 # faz arquivo .tex da tabela 
 print(xtable(iv_age, type = "latex"), file = "iv_age.tex")
@@ -78,6 +88,13 @@ print(xtable(iv_restingbp, type = "latex"), file = "iv_restingbp.tex")
 print(xtable(iv_choles, type = "latex"), file = "iv_choles.tex")
 print(xtable(iv_maxhr, type = "latex"), file = "iv_maxhr.tex")
 print(xtable(iv_oldpeak, type = "latex"), file = "iv_oldpeak.tex")
+
+print(xtable(iv_sex, type = "latex"), file = "iv_sex.tex")
+print(xtable(iv_chest_pain, type = "latex"), file = "iv_chest_pain.tex")
+print(xtable(iv_fasting, type = "latex"), file = "iv_fasting.tex")
+print(xtable(iv_restECG, type = "latex"), file = "iv_restECG.tex")
+print(xtable(iv_exc_angi, type = "latex"), file = "iv_exc_angi.tex")
+print(xtable(iv_ST_slope, type = "latex"), file = "iv_ST_slope.tex")
 
 
 iv_sum <- data.frame(

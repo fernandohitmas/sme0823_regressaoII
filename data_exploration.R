@@ -36,7 +36,7 @@ c1 <- ggplot(dt, aes(x = Age, fill = HeartDisease)) +
     breaks = scales::pretty_breaks(n = 10)) +
   scale_y_continuous(
     name="Contagem",
-    limits=c(0, 150),
+    limits=c(0, 100),
     breaks = scales::pretty_breaks(n = 9)) +
   ggtitle("Histograma das Observações para variável Idade",)+
   theme(
@@ -47,14 +47,14 @@ c1 <- ggplot(dt, aes(x = Age, fill = HeartDisease)) +
 c2 <- ggplot(dt, aes(x = Cholesterol, fill = HeartDisease)) +
   geom_histogram(color = 'black', bins=15) +
   scale_x_continuous(
-    name="Idade",
+    name="Colesterol",
     limits=c(0, 650),
     breaks = scales::pretty_breaks(n = 10)) +
   scale_y_continuous(
     name="Contagem",
-    limits=c(0, 300),
+    limits=c(0, 160),
     breaks = scales::pretty_breaks(n = 10)) +
-  ggtitle("Histograma das Observações para variável Idade",)+
+  ggtitle("Histograma das Observações para variável Colesterol",)+
   theme(
     plot.title=element_text( hjust=0.5, vjust=0.5, face='bold'),
     legend.position = "bottom"
@@ -63,14 +63,14 @@ c2 <- ggplot(dt, aes(x = Cholesterol, fill = HeartDisease)) +
 c3 <- ggplot(dt, aes(x = RestingBP, fill = HeartDisease)) +
   geom_histogram(color = 'black', bins=15) +
   scale_x_continuous(
-    name="Idade",
+    name="Pressao Sanguinea em Respouso",
     limits=c(80, 220),
     breaks = scales::pretty_breaks(n = 10)) +
   scale_y_continuous(
     name="Contagem",
-    limits=c(0, 180),
+    limits=c(0, 120),
     breaks = scales::pretty_breaks(n = 10)) +
-  ggtitle("Histograma das Observações para variável Idade",)+
+  ggtitle("Histograma das Observações para variável Pressao Sanguinea em Respouso",)+
   theme(
     plot.title=element_text( hjust=0.5, vjust=0.5, face='bold'),
     legend.position = "bottom"
@@ -79,14 +79,14 @@ c3 <- ggplot(dt, aes(x = RestingBP, fill = HeartDisease)) +
 c4 <- ggplot(dt, aes(x = MaxHR, fill = HeartDisease)) +
   geom_histogram(color = 'black', bins=15) +
   scale_x_continuous(
-    name="Idade",
+    name="Frequencia Cardiaca",
     limits=c(50, 220),
     breaks = scales::pretty_breaks(n = 10)) +
   scale_y_continuous(
     name="Contagem",
     limits=c(0, 80),
     breaks = scales::pretty_breaks(n = 10)) +
-  ggtitle("Histograma das Observações para variável Idade",)+
+  ggtitle("Histograma das Observações para Frequencia Cardiaca Maxima",)+
   theme(
     plot.title=element_text( hjust=0.5, vjust=0.5, face='bold'),
     legend.position = "bottom"
@@ -95,19 +95,19 @@ c4 <- ggplot(dt, aes(x = MaxHR, fill = HeartDisease)) +
 c5 <- ggplot(dt, aes(x = Oldpeak, fill = HeartDisease)) +
   geom_histogram(color = 'black', bins = 15) +
   scale_x_continuous(
-    name="Idade",
+    name="Tamanho da Depressao",
     limits=c(0, 7),
     breaks = scales::pretty_breaks(n = 10)) +
   scale_y_continuous(
     name="Contagem",
     limits=c(0, 120),
     breaks = scales::pretty_breaks(n = 10)) +
-  ggtitle("Histograma das Observações para variável Idade",)+
+  ggtitle("Histograma das Observações para variavel Depressao do Segmento ST",)+
   theme(
     plot.title=element_text( hjust=0.5, vjust=0.5, face='bold'),
     legend.position = "bottom"
   )
-grid2 <- grid.arrange(c1, c2,c3,c4,c5, nrow = 2,ncol=3)
+grid2 <- grid.arrange(c5, c2,c1,c4,c3, nrow = 2,ncol=3, widths = c(1.1,1,1))
 ggsave("./images/grid2.jpeg", grid2, width = 50, height = 28, units = "cm")
 
 
