@@ -8,6 +8,7 @@ library(woe)
 library(xtable)
 library(tidyverse)
 library(pROC)
+library(caret)
 
 # Leitura de Dados ----
 dt <- fread("./data/heart.csv")
@@ -28,6 +29,7 @@ dt <- dt[RestingBP != 0 & Cholesterol !=0 & Oldpeak > 0] # https://d-nb.info/124
 
 # Tranformacao para variavel categorica ----
 # dt[,c(2,3,6,7,9,11,12)] <- lapply(dt[,c(2,3,6,7,9,11,12)], as.factor)
+dt$HeartDisease <- as.factor(dt$HeartDisease)
 
 
 #Simplify ChestPainType, only check for Asymptomatic pain
@@ -116,32 +118,33 @@ iv_sum <- data.frame(
 )
 
 
+iv_sum[1, iv_sum < 0.1]
+# Colesterol, FastingBS e RestingECGST
+
+iv_heart <- dt[, c("Age","RestingBP", "MaxHR", "Oldpeak",
+                   "HeartDisease", "ChestPainASY",
+                   "ST_SlopeDownFlat", "Sex_fct", "ExerciseAngina_fct")]
+
 
 print(xtable(iv_sum, type = "latex"), file = "iv_sum.tex")
 
 
 
 #woe(Data=mtcars,"cyl",FALSE,"am",10,Bad=0,Good=1)
-model <- gamlss(HeartDisease ~ Sex_fct*ChestPainASY, data = dt, family = BI(mu.link=logit))
+model <- gamlss(HeartDisease ~ ., data = iv_heart, family = BI(mu.link=logit), type = "response")
 gamlss::stepGAIC(model,
                  scope = c(lower = ~ 1,
-                           upper = ~ Age + RestingBP + FastingBS + 
-                           RestingECGST + MaxHR + ExerciseAngina_fct + 
-                           Oldpeak + ST_SlopeDownFlat + Sex_fct*ChestPainASY),
+                           upper = ~ .),
                  direction = "both")
-
-
-#model <- glm(HeartDisease ~ ., data = dt, family = "binomial")
-#step(model)
 
 
 step_variables <- c("Sex_fct", "ChestPainASY", "Oldpeak", "ST_SlopeDownFlat", 
                     "ExerciseAngina_fct", "Age", "RestingBP", "HeartDisease")
-heart_step <- dt[,c("Sex_fct", "ChestPainASY", "Oldpeak", "ST_SlopeDownFlat",
+heart_step <- iv_heart[,c("Sex_fct", "ChestPainASY", "Oldpeak", "ST_SlopeDownFlat",
                     "ExerciseAngina_fct", "Age", "RestingBP", "HeartDisease")]
 
 step_model <- gamlss(formula = HeartDisease ~ .,  
-                     family = BI(mu.link = logit), data = heart_step, trace = FALSE)
+                     family = BI(mu.link = logit), data = heart_step, type = "response")
 
 #step_model <- glm(HeartDisease ~ ., data = heart_step, family = "binomial")
 summary(step_model)
@@ -160,7 +163,7 @@ predictvalsGLM <- rep(-1,n)
 for (i in 1:k) {
   groupi <- (cvgroups == i)
   fit = gamlss(formula = HeartDisease ~ ., family = BI(mu.link = logit), data = heart_step[!groupi,])
-  predictvalsGLM[groupi] = predict(object = fit, heart_step[groupi,], type = "response")
+  predictvalsGLM[groupi] = predict(object = fit, newdata = heart_step[groupi,], type = "response")
 }
 
 
@@ -199,5 +202,22 @@ lines(errorRateMtx[,4], x = errorRateMtx[,1], col = "blue", lty = 2)
 legend("topleft", legend = c("Total error", "False positive","False Negative"), col=c("red", "green", "blue"), lty=c(20,2,2), cex=0.8)
 
 minerror <- min(errorRateMtx[,2])
+#Possíveis treshold
 errorRateMtx[errorRateMtx[,2]==minerror,1]
+#Erro mínimo
 errorRateMtx[errorRateMtx[,2]==minerror,2]
+
+
+confusionMatrix(data=as.factor(PredictedHDGLM), reference = dt$HeartDisease)
+
+#menor falso negativo
+minfn <- min(errorRateMtx[,4])
+#Possíveis treshold
+threshold <- errorRateMtx[errorRateMtx[,4]==minfn,1]
+#Erro mínimo
+errorRateMtx[errorRateMtx[,4]==minfn,2]
+
+Predicted <- rep(0, n)
+Predicted[predictvalsGLM >= threshold] <- 1
+
+confusionMatrix(data=as.factor(Predicted), reference = dt$HeartDisease)
