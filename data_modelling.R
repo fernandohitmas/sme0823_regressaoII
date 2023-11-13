@@ -171,6 +171,9 @@ PROC_obj <- roc(predictor = predictvalsGLM, response=dt$HeartDisease,
                        curve=TRUE)
 plot(PROC_obj)
 
+auc_value <- auc(dt$HeartDisease, predictvalsGLM)
+auc_value
+
 hist(predictvalsGLM)
 
 
@@ -203,21 +206,16 @@ legend("topleft", legend = c("Total error", "False positive","False Negative"), 
 
 minerror <- min(errorRateMtx[,2])
 #Possíveis treshold
-errorRateMtx[errorRateMtx[,2]==minerror,1]
+possible_thresh <- errorRateMtx[errorRateMtx[,2]==minerror,1]
 #Erro mínimo
 errorRateMtx[errorRateMtx[,2]==minerror,2]
 
-
-confusionMatrix(data=as.factor(PredictedHDGLM), reference = dt$HeartDisease)
-
-#menor falso negativo
-minfn <- min(errorRateMtx[,4])
-#Possíveis treshold
+#menor falso negativo com menor erro total
+minfn <- min(errorRateMtx[errorRateMtx[,1] %in% possible_thresh,4])
 threshold <- errorRateMtx[errorRateMtx[,4]==minfn,1]
-#Erro mínimo
-errorRateMtx[errorRateMtx[,4]==minfn,2]
 
 Predicted <- rep(0, n)
 Predicted[predictvalsGLM >= threshold] <- 1
+
 
 confusionMatrix(data=as.factor(Predicted), reference = dt$HeartDisease)
