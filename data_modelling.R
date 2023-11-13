@@ -42,16 +42,19 @@ print(xtable(iv_maxhr, type = "latex"), file = "iv_maxhr.tex")
 print(xtable(iv_oldpeak, type = "latex"), file = "iv_oldpeak.tex")
 
 
-sum(iv_age$IV)
-sum(iv_restingbp$IV)
-# IV colesterol < 0.1
-sum(iv_choles$IV)
-sum(iv_maxhr$IV)
-# IV oldpeak > 1
-# é a leitura do cardiograma e é coerente que esteja
-# relacionado com a presença de doença
-sum(iv_oldpeak$IV)
+iv_sum <- data.frame(
+  Age = sum(iv_age$IV),
+        # IV colesterol < 0.1
+  Cholesterol = sum(iv_choles$IV),
+  MaxHR = sum(iv_maxhr$IV),
+        # IV oldpeak > 1
+        # é a leitura do cardiograma e é coerente que esteja
+        # relacionado com a presença de doença
+  Oldpeak = sum(iv_oldpeak$IV),
+  Resting_BP = sum(iv_restingbp$IV)
+)
 
+print(xtable(iv_sum, type = "latex"), file = "iv_sum.tex")
 
 
 #woe(Data=mtcars,"cyl",FALSE,"am",10,Bad=0,Good=1)
@@ -60,5 +63,65 @@ gamlss::stepGAIC(model,
                  scope = c(lower = ~ 1,
                            upper = ~ Age + RestingBP + FastingBS + 
                            RestingECG + MaxHR + ExerciseAngina + 
-                           oldpeak + ST_Slope + Sex*ChestPainType),
-                 direction = "forward")
+                           Oldpeak + ST_Slope + Sex*ChestPainType),
+                 direction = "both")
+
+
+
+step_variables <- c("Sex", "ChestPainType", "Oldpeak", "ST_Slope", 
+                    "ExerciseAngina", "Age", "RestingBP", "HeartDisease")
+heart_step <- dt[,c("Sex", "ChestPainType", "Oldpeak", "ST_Slope",
+                    "ExerciseAngina", "Age", "RestingBP", "HeartDisease")]
+
+step_model <- gamlss(formula = HeartDisease ~ .,  
+                     family = BI(mu.link = probit), data = heart_step, trace = FALSE)
+
+summary(step_model)
+
+
+
+options(warn=-1)
+# 10 fold cross validation of model
+n <- dim(heart_step)[1]
+k = 10
+set.seed(2, sample.kind = "Rounding")
+groups <- c(rep(1:k,floor(n/k)),1:(n-floor(n/k)*k))
+set.seed(3, sample.kind = "Rounding")
+cvgroups <- sample(groups,n)
+predictvalsGLM <- rep(-1,n)
+for (i in 1:k) {
+  groupi <- (cvgroups == i)
+  fit = gamlss(formula = HeartDisease ~ ., family = BI(mu.link = probit), data = heart_step[!groupi,])
+  predictvalsGLM[groupi] = predict(object = fit, new_data = heart_step[groupi,], type = "response")
+}
+
+
+#Find the best threshold value
+probRng <- 20:80
+errorRateMtx <- matrix(nrow = length(probRng), ncol = 4)
+colnames(errorRateMtx) <- c("Threshold","ErrorRate","FalsePositive","FalseNegative")
+
+for (i in 1:length(probRng)) {
+  threshold <- probRng[i]/100
+  PredictedHDGLM <- rep(0, n)
+  PredictedHDGLM[predictvalsGLM >= threshold] <- 1
+  
+  tblGLM <- table(PredictedHDGLM, dt$HeartDisease)
+  errorRate <- (tblGLM[1,2]+tblGLM[2,1])/n
+  falsePos <-  tblGLM[2,1]/(tblGLM[2,2]+tblGLM[2,1])
+  falseNeg <- tblGLM[1,2]/(tblGLM[1,1]+tblGLM[1,2])
+  
+  errorRateMtx[i,1] <- threshold
+  errorRateMtx[i,2] <- errorRate
+  errorRateMtx[i,3] <- falsePos
+  errorRateMtx[i,4] <- falseNeg
+}
+
+plot(y = errorRateMtx[,2], x = errorRateMtx[,1], col = "red", pch = 20, ylim = c(0.1,0.2))
+lines(errorRateMtx[,3], x = errorRateMtx[,1], col = "green", lty = 2)
+lines(errorRateMtx[,4], x = errorRateMtx[,1], col = "blue", lty = 2)
+legend("topleft", legend = c("Total error", "False positive","False Negative"), col=c("red", "green", "blue"), lty=c(20,2,2), cex=0.8)
+
+minerror <- min(errorRateMtx[,2])
+errorRateMtx[errorRateMtx[,2]==minerror,1]
+errorRateMtx[errorRateMtx[,2]==minerror,2]
