@@ -219,3 +219,162 @@ Predicted[predictvalsGLM >= threshold] <- 1
 
 
 confusionMatrix(data=as.factor(Predicted), reference = dt$HeartDisease)
+
+
+# modelo probit
+
+model <- gamlss(HeartDisease ~ ., data = iv_heart, family = BI(mu.link=probit), type = "response")
+gamlss::stepGAIC(model,
+                 scope = c(lower = ~ 1,
+                           upper = ~ .),
+                 direction = "both")
+
+
+step_variables <- c("Sex_fct", "ChestPainASY", "Oldpeak", "ST_SlopeDownFlat", 
+                    "ExerciseAngina_fct", "Age", "RestingBP", "HeartDisease")
+heart_step <- iv_heart[,c("Sex_fct", "ChestPainASY", "Oldpeak", "ST_SlopeDownFlat",
+                          "ExerciseAngina_fct", "Age", "RestingBP", "HeartDisease")]
+
+step_model <- gamlss(formula = HeartDisease ~ .,  
+                     family = BI(mu.link = probit), data = heart_step, type = "response")
+
+#step_model <- glm(HeartDisease ~ ., data = heart_step, family = "binomial")
+summary(step_model)
+
+
+
+options(warn=-1)
+# 10 fold cross validation of model
+n <- dim(heart_step)[1]
+k = 10
+set.seed(2, sample.kind = "Rounding")
+groups <- c(rep(1:k,floor(n/k)),1:(n-floor(n/k)*k))
+set.seed(3, sample.kind = "Rounding")
+cvgroups <- sample(groups,n)
+predictvalsGLM <- rep(-1,n)
+for (i in 1:k) {
+  groupi <- (cvgroups == i)
+  fit = gamlss(formula = HeartDisease ~ ., family = BI(mu.link = probit), data = heart_step[!groupi,])
+  predictvalsGLM[groupi] = predict(object = fit, newdata = heart_step[groupi,], type = "response")
+}
+
+auc_value <- auc(dt$HeartDisease, predictvalsGLM)
+auc_value
+
+
+#Find the best threshold value
+probRng <- 20:80
+errorRateMtx <- matrix(nrow = length(probRng), ncol = 4)
+colnames(errorRateMtx) <- c("Threshold","ErrorRate","FalsePositive","FalseNegative")
+
+for (i in 1:length(probRng)) {
+  threshold <- probRng[i]/100
+  PredictedHDGLM <- rep(0, n)
+  PredictedHDGLM[predictvalsGLM >= threshold] <- 1
+  
+  tblGLM <- table(PredictedHDGLM, dt$HeartDisease)
+  errorRate <- (tblGLM[1,2]+tblGLM[2,1])/n
+  falsePos <-  tblGLM[2,1]/(tblGLM[2,2]+tblGLM[2,1])
+  falseNeg <- tblGLM[1,2]/(tblGLM[1,1]+tblGLM[1,2])
+  
+  errorRateMtx[i,1] <- threshold
+  errorRateMtx[i,2] <- errorRate
+  errorRateMtx[i,3] <- falsePos
+  errorRateMtx[i,4] <- falseNeg
+}
+
+minerror <- min(errorRateMtx[,2])
+#Possíveis treshold
+possible_thresh <- errorRateMtx[errorRateMtx[,2]==minerror,1]
+#Erro mínimo
+errorRateMtx[errorRateMtx[,2]==minerror,2]
+
+#menor falso negativo com menor erro total
+minfn <- min(errorRateMtx[errorRateMtx[,1] %in% possible_thresh,4])
+threshold <- errorRateMtx[errorRateMtx[,4]==minfn,1]
+
+Predicted <- rep(0, n)
+Predicted[predictvalsGLM >= threshold] <- 1
+
+
+confusionMatrix(data=as.factor(Predicted), reference = dt$HeartDisease)
+
+
+
+# modelo cloglog
+
+model <- gamlss(HeartDisease ~ ., data = iv_heart, family = BI(mu.link=cloglog), type = "response")
+gamlss::stepGAIC(model,
+                 scope = c(lower = ~ 1,
+                           upper = ~ .),
+                 direction = "both")
+
+
+step_variables <- c("Sex_fct", "ChestPainASY", "Oldpeak", "ST_SlopeDownFlat", 
+                    "ExerciseAngina_fct", "Age", "RestingBP", "HeartDisease")
+heart_step <- iv_heart[,c("Sex_fct", "ChestPainASY", "Oldpeak", "ST_SlopeDownFlat",
+                          "ExerciseAngina_fct", "Age", "RestingBP", "HeartDisease")]
+
+step_model <- gamlss(formula = HeartDisease ~ .,  
+                     family = BI(mu.link = cloglog), data = heart_step, type = "response")
+
+#step_model <- glm(HeartDisease ~ ., data = heart_step, family = "binomial")
+summary(step_model)
+
+
+
+options(warn=-1)
+# 10 fold cross validation of model
+n <- dim(heart_step)[1]
+k = 10
+set.seed(2, sample.kind = "Rounding")
+groups <- c(rep(1:k,floor(n/k)),1:(n-floor(n/k)*k))
+set.seed(3, sample.kind = "Rounding")
+cvgroups <- sample(groups,n)
+predictvalsGLM <- rep(-1,n)
+for (i in 1:k) {
+  groupi <- (cvgroups == i)
+  fit = gamlss(formula = HeartDisease ~ ., family = BI(mu.link = cloglog), data = heart_step[!groupi,])
+  predictvalsGLM[groupi] = predict(object = fit, newdata = heart_step[groupi,], type = "response")
+}
+
+auc_value <- auc(dt$HeartDisease, predictvalsGLM)
+auc_value
+
+
+#Find the best threshold value
+probRng <- 20:80
+errorRateMtx <- matrix(nrow = length(probRng), ncol = 4)
+colnames(errorRateMtx) <- c("Threshold","ErrorRate","FalsePositive","FalseNegative")
+
+for (i in 1:length(probRng)) {
+  threshold <- probRng[i]/100
+  PredictedHDGLM <- rep(0, n)
+  PredictedHDGLM[predictvalsGLM >= threshold] <- 1
+  
+  tblGLM <- table(PredictedHDGLM, dt$HeartDisease)
+  errorRate <- (tblGLM[1,2]+tblGLM[2,1])/n
+  falsePos <-  tblGLM[2,1]/(tblGLM[2,2]+tblGLM[2,1])
+  falseNeg <- tblGLM[1,2]/(tblGLM[1,1]+tblGLM[1,2])
+  
+  errorRateMtx[i,1] <- threshold
+  errorRateMtx[i,2] <- errorRate
+  errorRateMtx[i,3] <- falsePos
+  errorRateMtx[i,4] <- falseNeg
+}
+
+minerror <- min(errorRateMtx[,2])
+#Possíveis treshold
+possible_thresh <- errorRateMtx[errorRateMtx[,2]==minerror,1]
+#Erro mínimo
+errorRateMtx[errorRateMtx[,2]==minerror,2]
+
+#menor falso negativo com menor erro total
+minfn <- min(errorRateMtx[errorRateMtx[,1] %in% possible_thresh,4])
+threshold <- errorRateMtx[errorRateMtx[,4]==minfn,1]
+
+Predicted <- rep(0, n)
+Predicted[predictvalsGLM >= threshold] <- 1
+
+
+confusionMatrix(data=as.factor(Predicted), reference = dt$HeartDisease)
