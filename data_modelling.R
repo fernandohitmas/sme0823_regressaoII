@@ -13,6 +13,9 @@ library(caret)
 # Leitura de Dados ----
 dt <- fread("./data/heart.csv")
 
+# Retirada de valores com zero em RestingBP e Cholesterol
+dt <- dt[RestingBP != 0 & Cholesterol !=0 & Oldpeak > 0] # https://d-nb.info/1242792767/34
+
 # Numero de variveis independentes (p) e numero de linhas (n)
 p <- ncol(dt)-1
 n <- nrow(dt)
@@ -23,9 +26,6 @@ cat(colnames(dt), sep = ', ')
 
 # Valore unicos por variavel
 print(lapply(lapply(dt, unique),sort))
-
-# Retirada de valores com zero em RestingBP e Cholesterol
-dt <- dt[RestingBP != 0 & Cholesterol !=0 & Oldpeak > 0] # https://d-nb.info/1242792767/34
 
 # Tranformacao para variavel categorica ----
 # dt[,c(2,3,6,7,9,11,12)] <- lapply(dt[,c(2,3,6,7,9,11,12)], as.factor)
@@ -60,13 +60,6 @@ dt$ExerciseAngina_fct <- as.factor(dt$ExerciseAngina_fct)
 dt <- dt[,c("Age","RestingBP", "Cholesterol", "FastingBS", "MaxHR", "Oldpeak",
             "HeartDisease", "ChestPainASY", "RestingECGST", 
             "ST_SlopeDownFlat", "Sex_fct", "ExerciseAngina_fct")]
-#names(dt)[!names(dt) %in% removecols]
-#Dataset is looking better
-#Add heartdisease back to the data frame
-#heart_imp$HeartDisease <- heart$HeartDisease
-
-
-
 
 # Selecao de variaveis (IV e GAIC)
 # Categoricas: Sex, ChestPainType, FastingBS, RestingECG, ExerciseAngina, ST_Slope, HeartDisease
@@ -94,7 +87,6 @@ print(xtable(iv$restingbp, type = "latex"), file = "iv_restingbp.tex")
 print(xtable(iv$choles, type = "latex"), file = "iv_choles.tex")
 print(xtable(iv$maxhr, type = "latex"), file = "iv_maxhr.tex")
 print(xtable(iv$oldpeak, type = "latex"), file = "iv_oldpeak.tex")
-
 print(xtable(iv$sex, type = "latex"), file = "iv_sex.tex")
 print(xtable(iv$chest_pain, type = "latex"), file = "iv_chest_pain.tex")
 print(xtable(iv$fasting, type = "latex"), file = "iv_fasting.tex")
@@ -102,7 +94,7 @@ print(xtable(iv$restECG, type = "latex"), file = "iv_restECG.tex")
 print(xtable(iv$exc_angi, type = "latex"), file = "iv_exc_angi.tex")
 print(xtable(iv$ST_slope, type = "latex"), file = "iv_ST_slope.tex")
 
-
+# Soma dos valoes de IV
 iv_sum <- data.frame(
   age = sum(iv$age["IV"]),
   restingbp = sum(iv$restingbp["IV"]),
@@ -117,39 +109,55 @@ iv_sum <- data.frame(
   ST_slope = sum(iv$ST_slope["IV"])
 )
 
-
+# Checa quais variaveis nao sao significativas. Criterio: iv < 0.1
+# Variaveis com iv < 0.1: Colesterol, FastingBS e RestingECGST
 iv_sum[1, iv_sum < 0.1]
-# Colesterol, FastingBS e RestingECGST
 
+# Retira-se as colunas acima mencionadas
 iv_heart <- dt[, c("Age","RestingBP", "MaxHR", "Oldpeak",
                    "HeartDisease", "ChestPainASY",
                    "ST_SlopeDownFlat", "Sex_fct", "ExerciseAngina_fct")]
-
-
 print(xtable(iv_sum, type = "latex"), file = "iv_sum.tex")
 
+# Aplicacao do modelo Binomial com funcao de ligacao LOGIT
+mod_logit <- gamlss(HeartDisease ~ ., data = iv_heart, family = BI(mu.link=logit), type = "response")
+mod_probit <- gamlss(HeartDisease ~ ., data = iv_heart, family = BI(mu.link=probit), type = "response")
+mod_clog <- gamlss(HeartDisease ~ ., data = iv_heart, family = BI(mu.link=cloglog), type = "response")
 
-
-#woe(Data=mtcars,"cyl",FALSE,"am",10,Bad=0,Good=1)
-model <- gamlss(HeartDisease ~ ., data = iv_heart, family = BI(mu.link=logit), type = "response")
-gamlss::stepGAIC(model,
+# Utilizacao do coeficiente GAIC passo a passo, tanto foward como backward
+gamlss::stepGAIC(mod_logit,
+                 scope = c(lower = ~ 1,
+                           upper = ~ .),
+                 direction = "both")
+gamlss::stepGAIC(mod_probit,
+                 scope = c(lower = ~ 1,
+                           upper = ~ .),
+                 direction = "both")
+gamlss::stepGAIC(mod_clog,
                  scope = c(lower = ~ 1,
                            upper = ~ .),
                  direction = "both")
 
 
-step_variables <- c("Sex_fct", "ChestPainASY", "Oldpeak", "ST_SlopeDownFlat", 
-                    "ExerciseAngina_fct", "Age", "RestingBP", "HeartDisease")
-heart_step <- iv_heart[,c("Sex_fct", "ChestPainASY", "Oldpeak", "ST_SlopeDownFlat",
-                    "ExerciseAngina_fct", "Age", "RestingBP", "HeartDisease")]
+# Variaveis selecionadas em cada modelo
+# logit e probit: retira-se MaxHR
+# Complemento log log: retira-se Age
+heart_step_logit <- iv_heart[,c("Sex_fct", "ChestPainASY", "Oldpeak", "ST_SlopeDownFlat",
+                                "ExerciseAngina_fct", "Age", "RestingBP", "HeartDisease")]
+heart_step_clog <- iv_heart[,c("Sex_fct", "ChestPainASY", "Oldpeak", "ST_SlopeDownFlat",
+                               "ExerciseAngina_fct", "MaxHR", "RestingBP", "HeartDisease")]
 
-step_model <- gamlss(formula = HeartDisease ~ .,  
-                     family = BI(mu.link = logit), data = heart_step, type = "response")
+step_model_logit <- gamlss(formula = HeartDisease ~ .,  
+                           family = BI(mu.link = logit), data = heart_step_logit, type = "response")
+step_model_probit <- gamlss(formula = HeartDisease ~ .,  
+                            family = BI(mu.link = probit), data = heart_step_logit, type = "response")
+step_model_clog <- gamlss(formula = HeartDisease ~ .,  
+                          family = BI(mu.link = cloglog), data = heart_step_clog, type = "response")
 
-#step_model <- glm(HeartDisease ~ ., data = heart_step, family = "binomial")
-summary(step_model)
-
-
+# Resultado do modelo
+summary(step_model_logit)
+summary(step_model_probit)
+summary(step_model_clog)
 
 options(warn=-1)
 # 10 fold cross validation of model
@@ -166,19 +174,18 @@ for (i in 1:k) {
   predictvalsGLM[groupi] = predict(object = fit, newdata = heart_step[groupi,], type = "response")
 }
 
-
 PROC_obj <- roc(predictor = predictvalsGLM, response=dt$HeartDisease,
-                       curve=TRUE)
-plot(PROC_obj)
+                curve=TRUE)
 
 auc_value <- auc(dt$HeartDisease, predictvalsGLM)
 auc_value
 
-hist(predictvalsGLM)
+plot(PROC_obj, main = "Curva ROC para o modelo ajustado")
+mtext(paste('AUC = ',round(auc_value,3)),side = 1, line = -1)
 
+hist(predictvalsGLM, main = "Histograma dos valores preditos")
 
-
-#Find the best threshold value
+# Calcular o melhor valor de Threshold
 probRng <- 20:80
 errorRateMtx <- matrix(nrow = length(probRng), ncol = 4)
 colnames(errorRateMtx) <- c("Threshold","ErrorRate","FalsePositive","FalseNegative")
@@ -199,10 +206,15 @@ for (i in 1:length(probRng)) {
   errorRateMtx[i,4] <- falseNeg
 }
 
-plot(y = errorRateMtx[,2], x = errorRateMtx[,1], col = "red", pch = 20, ylim = c(0.1,0.2))
+plot(y = errorRateMtx[,2], x = errorRateMtx[,1], col = "red", pch = 20, ylim = c(0.1,0.2),
+     main = "Curvas de Falsos Negativos e Falsos Positivos",
+     xlab="Threshold",
+     ylab="Contagem de Erros")
 lines(errorRateMtx[,3], x = errorRateMtx[,1], col = "green", lty = 2)
 lines(errorRateMtx[,4], x = errorRateMtx[,1], col = "blue", lty = 2)
-legend("topleft", legend = c("Total error", "False positive","False Negative"), col=c("red", "green", "blue"), lty=c(20,2,2), cex=0.8)
+legend("bottomright", legend = c("Erro Total", "Falso Positivo","Falso Negativo"), col=c("red", "green", "blue"), lty=c(20,2,2), cex=0.8)
+abline(v = 0.34)
+mtext("0.34", side = 2, line = -7)
 
 minerror <- min(errorRateMtx[,2])
 #Possíveis treshold
@@ -213,6 +225,7 @@ errorRateMtx[errorRateMtx[,2]==minerror,2]
 #menor falso negativo com menor erro total
 minfn <- min(errorRateMtx[errorRateMtx[,1] %in% possible_thresh,4])
 threshold <- errorRateMtx[errorRateMtx[,4]==minfn,1]
+
 
 Predicted <- rep(0, n)
 Predicted[predictvalsGLM >= threshold] <- 1
