@@ -1,8 +1,9 @@
 library(tidyverse)
 library(ggplot2)
+library(GGally)
 
 # Leitura de Dados ----
-dt <- fread("./data/alb_homes.csv")
+dt <- read_delim("./data/alb_homes.csv")
 
 # Verifica colunas que possuem NA
 # "yearbuilt": nao tem necessidade de se manter ja que a variavel de idade do imovel indica a mesma coisa
@@ -10,20 +11,55 @@ dt <- fread("./data/alb_homes.csv")
 colnames(dt)[ apply(dt, 2, anyNA)]
 
 # linhas que possuem NA
-dt[!complete.cases(dt), ]
+dt[!complete.cases(dt),]
 
 # Remocao de NA e remocao da coluna yearbuilt
 dt <- dt[,-1]
 dt <- na.omit(dt)
 
-# Numero de variveis independentes (p) e numero de linhas (n)
+# Remocao de duplicatas
+dt <- dt[!duplicated(dt),]
+
+# Numero de variveis independentes (p = 13) e numero de linhas (n = 3015)
 p <- ncol(dt)-1
 n <- nrow(dt)
 
-# Categoricas: Sex, ChestPainType, FastingBS, RestingECG, ExerciseAngina, ST_Slope, HeartDisease
-# Continuas: Age, RestingBP, Cholesterol, MaxHR, Oldpeak
+# Categoricas: "cooling", "bedroom", fullbath", "halfbath", "esdistrict", "msdistrict", "hsdistrict", "censustract", "condition", "fp"
+# Continuas: "finsqft", "lotsize", "totalvalue", "age"
+# Variavel Target: "totalvalue"
 cat(colnames(dt), sep = ', ')
+char_cols <- c("cooling", "bedroom", "fullbath", "halfbath", "esdistrict", "msdistrict", "hsdistrict", "censustract", "condition", "fp")
+dt[,char_cols] <- lapply(dt[,char_cols], as.factor)
+
+# Apenas realocacao da variavel target para o final do conjunto de dados
+dt <- dt %>% relocate(totalvalue, .after = fp)
 
 # Valore unicos por variavel
 print(lapply(lapply(dt, unique),sort))
+
+
+char_cols <- c("cooling", "fullbath", "halfbath", "esdistrict", "msdistrict", "hsdistrict", "censustract", "condition", "fp")
+
+dt[dt["censustract"] == 111,]
+
+
+
+head(dt)
+
+dt[,c("finsqft")]
+
+
+names(gplot)
+ggpairs(dt)
+
+gplot <- GGally::ggpairs(dt, columns = 1:4, aes(color=cooling))
+gplot$nrow <- 4
+print(gplot)
+
+col <- "fp"
+
+for (col in colnames(dt)) {
+  hist(x = dt[[grep(col, colnames(dt))]])
+}
+
 
