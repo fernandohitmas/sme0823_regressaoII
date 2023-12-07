@@ -1,28 +1,53 @@
 library(tidyverse)
 library(ggplot2)
 library(GGally)
+library(xtable)
+library(data.table)
+
+setwd("/Users/user/Documents/Pessoal/regressao II/sme0823_regressaoII/")
 
 # Leitura de Dados ----
-dt <- read_delim("./data/alb_homes.csv")
+dt_raw <- read_delim("./data/alb_homes.csv")
 
 # Verifica colunas que possuem NA
 # "yearbuilt": nao tem necessidade de se manter ja que a variavel de idade do imovel indica a mesma coisa
 # "halfbath" : serao removidos os na, uma vez que a quantidade eh muito pequena, 4 entre 3025
-colnames(dt)[ apply(dt, 2, anyNA)]
+colnames(dt_raw)[apply(dt_raw, 2, anyNA)]
 
 # linhas que possuem NA
-dt[!complete.cases(dt),]
+dt_na <- copy(dt_raw[!complete.cases(dt_raw),c(1:7,15)])
+print(
+  xtable(
+    dt_na,
+    type = "latex"),
+    NA.string = "NA",
+    include.rownames = FALSE,
+  file = "./tex/dt_na.tex")
 
 # Remocao de NA e remocao da coluna yearbuilt
-dt <- dt[,-1]
-dt <- na.omit(dt)
+# Correlacao entre yearbuilt e age é -1
+na_index <- which(is.na(dt_raw$yearbuilt))
+cor(dt$yearbuilt[-na_index], dt_raw$age[-na_index])
+data <- copy(dt_raw[,-1])
+data <- na.omit(data)
 
 # Remocao de duplicatas
-dt <- dt[!duplicated(dt),]
+dt_duplicatas <- arrange(data[duplicated(data) | duplicated(data, fromLast = TRUE),c(1,7:14)], totalvalue) # Lista de replicas
+print(
+  xtable(
+    dt_duplicatas,
+    type = "latex"),
+  include.rownames = FALSE,
+  file = "./tex/dt_duplicatas.tex")
+dt <- data[!duplicated(data),]
+
 
 # Numero de variveis independentes (p = 13) e numero de linhas (n = 3015)
 p <- ncol(dt)-1
 n <- nrow(dt)
+
+# Apenas realocacao da variavel target para o final do conjunto de dados
+dt <- dt %>% relocate(totalvalue, .after = fp)
 
 # Categoricas: "cooling", "bedroom", fullbath", "halfbath", "esdistrict", "msdistrict", "hsdistrict", "censustract", "condition", "fp"
 # Continuas: "finsqft", "lotsize", "totalvalue", "age"
@@ -30,9 +55,6 @@ n <- nrow(dt)
 cat(colnames(dt), sep = ', ')
 char_cols <- c("cooling", "bedroom", "fullbath", "halfbath", "esdistrict", "msdistrict", "hsdistrict", "censustract", "condition", "fp")
 dt[,char_cols] <- lapply(dt[,char_cols], as.factor)
-
-# Apenas realocacao da variavel target para o final do conjunto de dados
-dt <- dt %>% relocate(totalvalue, .after = fp)
 
 # Valore unicos por variavel
 print(lapply(lapply(dt, unique),sort))
