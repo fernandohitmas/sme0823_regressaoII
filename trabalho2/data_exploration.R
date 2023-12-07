@@ -4,6 +4,7 @@ library(scales)
 library(egg)
 library(gridExtra)
 
+
 # Leitura de Dados ----
 dt <- fread("./data/heart.csv")
 

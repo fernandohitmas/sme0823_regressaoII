@@ -4,6 +4,14 @@ library(GGally)
 library(xtable)
 library(data.table)
 
+theme_set(theme_bw())
+
+# Funcoes de grafico ----
+plot_teste <- function(data, xlab, ylab, title){
+  
+}
+
+
 setwd("/Users/user/Documents/Pessoal/regressao II/sme0823_regressaoII/")
 
 # Leitura de Dados ----
@@ -27,7 +35,7 @@ print(
 # Remocao de NA e remocao da coluna yearbuilt
 # Correlacao entre yearbuilt e age é -1
 na_index <- which(is.na(dt_raw$yearbuilt))
-cor(dt$yearbuilt[-na_index], dt_raw$age[-na_index])
+cor(dt_raw$yearbuilt[-na_index], dt_raw$age[-na_index])
 data <- copy(dt_raw[,-1])
 data <- na.omit(data)
 
@@ -49,6 +57,9 @@ n <- nrow(dt)
 # Apenas realocacao da variavel target para o final do conjunto de dados
 dt <- dt %>% relocate(totalvalue, .after = fp)
 
+# Valore unicos por variavel
+print(lapply(lapply(dt, unique),sort))
+
 # Categoricas: "cooling", "bedroom", fullbath", "halfbath", "esdistrict", "msdistrict", "hsdistrict", "censustract", "condition", "fp"
 # Continuas: "finsqft", "lotsize", "totalvalue", "age"
 # Variavel Target: "totalvalue"
@@ -56,15 +67,18 @@ cat(colnames(dt), sep = ', ')
 char_cols <- c("cooling", "bedroom", "fullbath", "halfbath", "esdistrict", "msdistrict", "hsdistrict", "censustract", "condition", "fp")
 dt[,char_cols] <- lapply(dt[,char_cols], as.factor)
 
-# Valore unicos por variavel
-print(lapply(lapply(dt, unique),sort))
-
-
-char_cols <- c("cooling", "fullbath", "halfbath", "esdistrict", "msdistrict", "hsdistrict", "censustract", "condition", "fp")
-
 dt[dt["censustract"] == 111,]
+unique(dt$censustract)
 
-
+for (c in char_cols) {
+  p <- ggplot(dt) +
+    geom_histogram(aes_string(fill = c, x = "totalvalue"), color="black")
+  print(p)
+  }
+ggplot(dt) +
+  geom_histogram(aes_string(fill = "cooling", x = "totalvalue"), color="black")
+  
+as.data.frame(table(dt$censustract))
 
 head(dt)
 
