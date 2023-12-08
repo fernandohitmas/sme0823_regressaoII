@@ -4,6 +4,11 @@ library(GGally)
 library(xtable)
 library(data.table)
 
+# Install
+install.packages("wesanderson")
+# Load
+library(wesanderson)
+
 theme_set(theme_bw())
 
 # Funcoes de grafico ----
@@ -57,7 +62,7 @@ n <- nrow(dt)
 # Apenas realocacao da variavel target para o final do conjunto de dados
 dt <- dt %>% relocate(totalvalue, .after = fp)
 
-# Valore unicos por variavel
+# Valores unicos por variavel
 print(lapply(lapply(dt, unique),sort))
 
 # Categoricas: "cooling", "bedroom", fullbath", "halfbath", "esdistrict", "msdistrict", "hsdistrict", "censustract", "condition", "fp"
@@ -67,16 +72,46 @@ cat(colnames(dt), sep = ', ')
 char_cols <- c("cooling", "bedroom", "fullbath", "halfbath", "esdistrict", "msdistrict", "hsdistrict", "censustract", "condition", "fp")
 dt[,char_cols] <- lapply(dt[,char_cols], as.factor)
 
+# Transformacao da variavel resposta
+dt$logtotalvalue <- log(dt$totalvalue)
+dt$loglotsize <- log(dt$lotsize)
+
 dt[dt["censustract"] == 111,]
 unique(dt$censustract)
 
+ggplot(dt) +
+  geom_point(aes(x = finsqft, y = age, color = bedroom))
+
+cor(dt$finsqft, dt$lotsize)
+
 for (c in char_cols) {
   p <- ggplot(dt) +
-    geom_histogram(aes_string(fill = c, x = "totalvalue"), color="black")
+    geom_histogram(aes_string(fill = c, x = "logtotalvalue"), color="black")
   print(p)
-  }
+}
+dt %>% ggplot(aes(hsdistrict, after_stat(count))) + 
+  geom_bar(aes(fill = msdistrict), position = "dodge")
+
+# plot de interesse 1
 ggplot(dt) +
-  geom_histogram(aes_string(fill = "cooling", x = "totalvalue"), color="black")
+  geom_boxplot(aes_string(y = "logtotalvalue", x = "bedroom", fill = "fp"), color="black")
+
+# plot de interesse 2
+ggplot(dt) +
+  geom_boxplot(aes_string(y = "logtotalvalue", fill = "bedroom", x = "condition"), color="black")
+
+# plot de interesse 3
+ggplot(dt) +
+  geom_boxplot(aes_string(y = "logtotalvalue", x = "condition"), color="black")
+
+# plot de interesse 4
+ggplot(dt) +
+  geom_point(aes_string(y = "logtotalvalue", x = "loglotsize", color="fp"))#, color="black")
+
+# plot de interesse 4
+ggplot(dt) +
+  geom_histogram(aes_string(x = "loglotsize"))#, color="black")
+
   
 as.data.frame(table(dt$censustract))
 
