@@ -67,7 +67,7 @@ hsdis <- c('Western Albemarle')
 census <- c('114', '107', '113.02', '113.01', '104.02', '102.02', '110')
 ##########
 {
-  dtse <- subset(dt, select = -c(cooling, esdistrict, msdistrict, hsdistrict, censustract, logtotalvalue))
+  dtse <- subset(dt, select = -c(cooling, esdistrict, msdistrict, hsdistrict, censustract))
   for(d in esdis) {
     dstr <- paste('es', d, sep = '')
     dstr <- gsub(" ", "", dstr)
@@ -98,48 +98,80 @@ census <- c('114', '107', '113.02', '113.01', '104.02', '102.02', '110')
 colnames(dtse)[-10]
 dtse
 
-m1 <- gamlss(totalvalue ~ 1, data = dtse, family = LOGNO(mu.link = "identity", sigma.link = "log"))
+hist(dtse$totalvalue)
+
+
+m1 <- gamlss(totalvalue ~ 1, data = dtse, 
+            family = WEI3(mu.link = "log", sigma.link = "log"),
+            control = gamlss.control(n.cyc = 200)
+            )
+
 gamlss::stepGAIC(m1,
                  scope = c(lower = ~ 1,
                            upper = ~ finsqft + bedroom + fullbath + halfbath + lotsize + 
-                           age + condition + fp + centralair + esScottsville + esRedHill +         
-                           esCrozet + esBrownsville + esMeriwetherLewis + esMurray +            
-                           msWalton + msHenley + hsWesternAlbemarle + c114 +               
-                           c107 + c113_02 + c113_01 + c104_02 + c102_02 + c110)
+                             age + condition + fp + centralair + esScottsville + esRedHill +         
+                             esCrozet + esBrownsville + esMeriwetherLewis + esMurray +            
+                             msWalton + msHenley + hsWesternAlbemarle + 
+                             c114 + c107 + c113_02 + c113_01 + c104_02 + c102_02 + c110
+                             + (condition) 
+                             : (c114 + c107 + c113_02 + c113_01 + c104_02 + c102_02 + c110)
+                           )
                  ,direction = "both")
 
 
-dtstep <- dtse[, c('totalvalue', 'finsqft', 'lotsize', 'condition',
-                   'fullbath', 'fp', 'age', 'esScottsville', 'esMurray',
-                   'centralair', 'esBrownsville', 'esMeriwetherLewis',
-                   'esRedHill', 'halfbath', 'msWalton')]
+# dtstep <- dtse[, c('totalvalue', 'finsqft', 'lotsize', 'condition',
+#                    'fullbath', 'fp', 'age', 'esScottsville', 'esMurray',
+#                    'centralair', 'esCrozet', 'esMeriwetherLewis',
+#                    'esRedHill', 'halfbath', 'msWalton', 'bedroom', 'c114')]
+# 
+# stepmodel <- gamlss(formula = totalvalue ~ . + condition:c114 - c114, 
+#                     family = LOGNO(mu.link = "identity", sigma.link = "log"),
+#                     data = dtstep, trace = FALSE)
 
-stepmodel <- gamlss(formula = totalvalue ~ ., 
-                    family = LOGNO(mu.link = "identity",
-                                   sigma.link = "log"), data = dtstep, trace = FALSE)
+
+# modelo final
+stepmodel <- gamlss(formula = totalvalue ~ finsqft + lotsize + esMurray +  
+                      esScottsville + msWalton + esRedHill + condition +  
+                      esMeriwetherLewis + centralair + fullbath + age +  
+                      bedroom + esBrownsville + fp, family = WEI3(mu.link = "log",  
+                                                                  sigma.link = "log"), data = dtse, control = gamlss.control(n.cyc = 200),  
+                    trace = FALSE)
 
 summary(stepmodel)
+
+# gráficos de resíduo prontos, pode dar erro
 plot(stepmodel)
 
-options(warn=-1)
-# 10 fold cross validation of model
-n <- dim(dtstep)[1]
-k = 10
-set.seed(2, sample.kind = "Rounding")
-groups <- c(rep(1:k,floor(n/k)),1:(n-floor(n/k)*k))
-set.seed(3, sample.kind = "Rounding")
-cvgroups <- sample(groups,n)
-predictvalsGLM <- rep(-1,n)
-for (i in 1:k) {
-  groupi <- (cvgroups == i)
-  fit = gamlss(formula = totalvalue ~ ., 
-               family = LOGNO(mu.link = "identity",
-                              sigma.link = "log"), data = dtstep[!groupi,])
-  predictvalsGLM[groupi] = predict(object = fit, new_data = dtstep[groupi,], type = "response")
+# resíduos do ajuste
+{
+  res <- resid(stepmodel)
+  plot(fitted(stepmodel), res)
+  abline(0,0)
 }
-predictvalsGLM
 
+# qqplot
+{
+  qqnorm(res, ylim = c(-10,10))
+  qqline(res, col = "steelblue", lwd = 2)
+}
 
+#histograma do log do preço e do preço estimado
+hist(dtse$logtotalvalue, xlim=c(9,16))
+hist(predict(object = stepmodel, new_data = dtse$totaltotalvalue), xlim=c(9,16))
 
-qqnorm(dt$logtotalvalue, pch = 1, frame = FALSE)
-qqline(predict(object = stepmodel, new_data = dtse$totalvalue), col = "steelblue", lwd = 2)
+# options(warn=-1)
+# # 10 fold cross validation of model
+# n <- dim(dtstep)[1]
+# k = 10
+# set.seed(2, sample.kind = "Rounding")
+# groups <- c(rep(1:k,floor(n/k)),1:(n-floor(n/k)*k))
+# set.seed(3, sample.kind = "Rounding")
+# cvgroups <- sample(groups,n)
+# predictvalsGLM <- rep(-1,n)
+# for (i in 1:k) {
+#   groupi <- (cvgroups == i)
+#   fit = gamlss(formula = totalvalue ~ ., 
+#                family = LOGNO2(mu.link = "log", sigma.link = "log"), data = dtstep[!groupi,])
+#   predictvalsGLM[groupi] = predict(object = fit, new_data = dtstep[groupi,], type = "response")
+# }
+# predictvalsGLM
