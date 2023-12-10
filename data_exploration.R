@@ -70,11 +70,31 @@ print(lapply(lapply(dt, unique),sort))
 # Variavel Target: "totalvalue"
 cat(colnames(dt), sep = ', ')
 char_cols <- c("cooling", "bedroom", "fullbath", "halfbath", "esdistrict", "msdistrict", "hsdistrict", "censustract", "condition", "fp")
-dt[,char_cols] <- lapply(dt[,char_cols], as.factor)
+
+
+#dt[,char_cols] <- lapply(dt[,char_cols], as.factor)
+
+# condition:
+# 6 - excellent
+# 5 - good
+# 4 - average
+# 3 - fair
+# 2 - poor
+# 1 - substandard
+{
+  dt$condition[dt$condition == 'substandard'] <- 1
+  dt$condition[dt$condition == 'poor'] <- 2
+  dt$condition[dt$condition == 'fair'] <- 3
+  dt$condition[dt$condition == 'average'] <- 4
+  dt$condition[dt$condition == 'good'] <- 5
+  dt$condition[dt$condition == 'excellent'] <- 6
+}
+
+
 
 # Transformacao da variavel resposta
 dt$logtotalvalue <- log(dt$totalvalue)
-dt$loglotsize <- log(dt$lotsize)
+#dt$loglotsize <- log(dt$lotsize)
 
 dt[dt["censustract"] == 111,]
 unique(dt$censustract)
@@ -133,4 +153,50 @@ for (col in colnames(dt)) {
   hist(x = dt[[grep(col, colnames(dt))]])
 }
 
+group_ordered <- with(dt, reorder(esdistrict, logtotalvalue, median))
+dt_o <- dt
+dt_o$esdistrict <- factor(dt_o$esdistrict, levels = levels(group_ordered))
+# esdistrict = Murray parece um fator mais importante. hs e ms district não parecem relevantes
+ggplot(dt_o) +
+  geom_boxplot(aes_string(y = "logtotalvalue", x = "esdistrict"), color="black")
 
+
+esdis <- c('Scottsville', 'Red Hill', 'Crozet', 'Brownsville', 'Meriwether Lewis', 'Murray')
+as.data.frame(table(dt$esdistrict[dt$esdistrict %in% esdis]))
+
+######
+
+group_ordered <- with(dt, reorder(msdistrict, logtotalvalue, median))
+dt_o <- dt
+dt_o$msdistrict <- factor(dt_o$msdistrict, levels = levels(group_ordered))
+ggplot(dt_o) +
+  geom_boxplot(aes_string(y = "logtotalvalue", x = "msdistrict"), color="black")
+
+
+msdis <- c('Walton', 'Henley')
+as.data.frame(table(dt$msdistrict[dt$msdistrict %in% msdis]))
+
+######
+
+group_ordered <- with(dt, reorder(hsdistrict, logtotalvalue, median))
+dt_o <- dt
+dt_o$hsdistrict <- factor(dt_o$hsdistrict, levels = levels(group_ordered))
+ggplot(dt_o) +
+  geom_boxplot(aes_string(y = "logtotalvalue", x = "hsdistrict"), color="black")
+
+
+hsdis <- c('Western Albemarle')
+as.data.frame(table(dt$hsdistrict[dt$hsdistrict %in% hsdis]))
+
+
+
+
+group_ordered <- with(dt, reorder(censustract, logtotalvalue, median))
+dt_o <- dt
+dt_o$censustract <- factor(dt_o$censustract, levels = levels(group_ordered))
+ggplot(dt_o) +
+  geom_boxplot(aes_string(y = "logtotalvalue", x = "censustract"), color="black")
+
+unique(dt$censustract)
+census <- c(114, 107, 113.02, 113.01, 104.02, 102.02, 110)
+as.data.frame(table(dt$censustract[dt$censustract %in% census]))
