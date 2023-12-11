@@ -102,7 +102,7 @@ hist(dtse$totalvalue)
 
 
 m1 <- gamlss(totalvalue ~ 1, data = dtse, 
-            family = WEI3(mu.link = "log", sigma.link = "log"),
+            family = PARETO2o(mu.link = "log", sigma.link = "log"),
             control = gamlss.control(n.cyc = 200)
             )
 
@@ -130,12 +130,9 @@ gamlss::stepGAIC(m1,
 
 
 # modelo final
-stepmodel <- gamlss(formula = totalvalue ~ finsqft + lotsize + esMurray +  
-                      esScottsville + msWalton + esRedHill + condition +  
-                      esMeriwetherLewis + centralair + fullbath + age +  
-                      bedroom + esBrownsville + fp, family = WEI3(mu.link = "log",  
-                                                                  sigma.link = "log"), data = dtse, control = gamlss.control(n.cyc = 200),  
-                    trace = FALSE)
+stepmodel <- gamlss(formula = totalvalue ~ finsqft, family = PARETO(mu.link = "log"),  
+                    data = dtse, control = gamlss.control(n.cyc = 200),  
+                    trace = FALSE) 
 
 summary(stepmodel)
 
@@ -156,8 +153,17 @@ plot(stepmodel)
 }
 
 #histograma do log do preço e do preço estimado
-hist(dtse$logtotalvalue, xlim=c(9,16))
-hist(predict(object = stepmodel, new_data = dtse$totaltotalvalue), xlim=c(9,16))
+{
+h1 <- hist(dtse$logtotalvalue, breaks=200)
+h2 <- hist(predict(object = stepmodel, new_data = dtse$logtotaltotalvalue), breaks=200)
+plot( h1, col=rgb(0,0,1,1/4), xlim=c(10,16), ylim=c(0,180))
+plot( h2, col=rgb(1,0,0,1/4), xlim=c(10,16), add=T)
+}
+
+
+dtse$predicted <- predict(object = stepmodel, new_data = dtse$totaltotalvalue)
+ggplot(dtse) +
+  geom_point(aes(x = totalvalue, y = predicted))
 
 # options(warn=-1)
 # # 10 fold cross validation of model
