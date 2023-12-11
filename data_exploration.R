@@ -4,18 +4,7 @@ library(GGally)
 library(xtable)
 library(data.table)
 
-# Install
-install.packages("wesanderson")
-# Load
-library(wesanderson)
-
 theme_set(theme_bw())
-
-# Funcoes de grafico ----
-plot_teste <- function(data, xlab, ylab, title){
-  
-}
-
 
 setwd("/Users/user/Documents/Pessoal/regressao II/sme0823_regressaoII/")
 
@@ -90,69 +79,10 @@ char_cols <- c("cooling", "bedroom", "fullbath", "halfbath", "esdistrict", "msdi
   dt$condition[dt$condition == 'excellent'] <- 6
 }
 
-
-
 # Transformacao da variavel resposta
 dt$logtotalvalue <- log(dt$totalvalue)
-#dt$loglotsize <- log(dt$lotsize)
 
-dt[dt["censustract"] == 111,]
-unique(dt$censustract)
-
-ggplot(dt) +
-  geom_point(aes(x = finsqft, y = age, color = bedroom))
-
-cor(dt$finsqft, dt$lotsize)
-
-for (c in char_cols) {
-  p <- ggplot(dt) +
-    geom_histogram(aes_string(fill = c, x = "logtotalvalue"), color="black")
-  print(p)
-}
-dt %>% ggplot(aes(hsdistrict, after_stat(count))) + 
-  geom_bar(aes(fill = msdistrict), position = "dodge")
-
-# plot de interesse 1
-ggplot(dt) +
-  geom_boxplot(aes_string(y = "logtotalvalue", x = "bedroom", fill = "fp"), color="black")
-
-# plot de interesse 2
-ggplot(dt) +
-  geom_boxplot(aes_string(y = "logtotalvalue", fill = "bedroom", x = "condition"), color="black")
-
-# plot de interesse 3
-ggplot(dt) +
-  geom_boxplot(aes_string(y = "logtotalvalue", x = "condition"), color="black")
-
-# plot de interesse 4
-ggplot(dt) +
-  geom_point(aes_string(y = "logtotalvalue", x = "loglotsize", color="fp"))#, color="black")
-
-# plot de interesse 4
-ggplot(dt) +
-  geom_histogram(aes_string(x = "loglotsize"))#, color="black")
-
-  
-as.data.frame(table(dt$censustract))
-
-head(dt)
-
-dt[,c("finsqft")]
-
-
-names(gplot)
-ggpairs(dt)
-
-gplot <- GGally::ggpairs(dt, columns = 1:4, aes(color=cooling))
-gplot$nrow <- 4
-print(gplot)
-
-col <- "fp"
-
-for (col in colnames(dt)) {
-  hist(x = dt[[grep(col, colnames(dt))]])
-}
-
+# Boxplot LOGTOTALVALUE por esdistrict
 group_ordered <- with(dt, reorder(esdistrict, logtotalvalue, median))
 dt_o <- dt
 dt_o$esdistrict <- factor(dt_o$esdistrict, levels = levels(group_ordered))
