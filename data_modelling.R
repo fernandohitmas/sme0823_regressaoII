@@ -95,55 +95,112 @@ census <- c('114', '107', '113.02', '113.01', '104.02', '102.02', '110')
     dtse[dt$hsdistrict == d, cstr] <- 1
   }
 }
-colnames(dtse)[-10]
-dtse
-
-hist(dtse$totalvalue)
 
 
-m1 <- gamlss(totalvalue ~ 1, data = dtse, 
-            family = PARETO2o(mu.link = "log", sigma.link = "log"),
-            control = gamlss.control(n.cyc = 200)
-            )
+# BoxCox T
+m1_bct <- gamlss(formula = logtotalvalue ~ 1, 
+             family = BCT(mu.link = "identity", 
+                          sigma.link = "log", 
+                          nu.link = "identity", 
+                          tau.link = "log"),  
+             data = dtse, control = gamlss.control(n.cyc = 200),  
+             trace = FALSE)
 
-gamlss::stepGAIC(m1,
+m1_tf2 <- gamlss(formula = logtotalvalue ~ 1,
+             family = TF2(mu.link = "identity",
+                          sigma.link = "log", 
+                          nu.link = "logshiftto2"), 
+             data = dtse,  
+             control = gamlss.control(n.cyc = 200), trace = FALSE)
+
+m1_logno <- gamlss(formula = totalvalue ~ 1, 
+             family = LOGNO(mu.link = "identity",
+                            sigma.link = "log"), 
+             control = gamlss.control(n.cyc = 200),
+             data = dtse, trace = FALSE)
+
+# Definindo numero de nucleos para serem utilizados
+nC <- detectCores()
+
+gamlss::stepGAIC(m1_bct,
                  scope = c(lower = ~ 1,
                            upper = ~ finsqft + bedroom + fullbath + halfbath + lotsize + 
-                             age + condition + fp + centralair + esScottsville + esRedHill +         
-                             esCrozet + esBrownsville + esMeriwetherLewis + esMurray +            
-                             msWalton + msHenley + hsWesternAlbemarle + 
-                             c114 + c107 + c113_02 + c113_01 + c104_02 + c102_02 + c110
-                             + (condition) 
-                             : (c114 + c107 + c113_02 + c113_01 + c104_02 + c102_02 + c110)
-                           )
-                 ,direction = "both")
+                              age + condition + fp + centralair + esScottsville + esRedHill +         
+                              esCrozet + esBrownsville + esMeriwetherLewis + esMurray +            
+                              msWalton + msHenley + hsWesternAlbemarle + 
+                              c114 + c107 + c113_02 + c113_01 + c104_02 + c102_02 + c110
+                              + (condition) 
+                              : (c114 + c107 + c113_02 + c113_01 + c104_02 + c102_02 + c110)
+                 )
+                 ,direction = "both", parallel="snow",  ncpus=nC)
+
+gamlss::stepGAIC(m1_tf2,
+                  scope = c(lower = ~ 1,
+                            upper = ~ finsqft + bedroom + fullbath + halfbath + lotsize + 
+                            age + condition + fp + centralair + esScottsville + esRedHill +         
+                            esCrozet + esBrownsville + esMeriwetherLewis + esMurray +            
+                            msWalton + msHenley + hsWesternAlbemarle + 
+                            c114 + c107 + c113_02 + c113_01 + c104_02 + c102_02 + c110
+                            + (condition) 
+                            : (c114 + c107 + c113_02 + c113_01 + c104_02 + c102_02 + c110)
+                  )
+                  ,direction = "both", parallel="snow",  ncpus=nC)
+
+gamlss::stepGAIC(m1_logno,
+                  scope = c(lower = ~ 1,
+                            upper = ~ finsqft + bedroom + fullbath + halfbath + lotsize + 
+                            age + condition + fp + centralair + esScottsville + esRedHill +         
+                            esCrozet + esBrownsville + esMeriwetherLewis + esMurray +            
+                            msWalton + msHenley + hsWesternAlbemarle + 
+                            c114 + c107 + c113_02 + c113_01 + c104_02 + c102_02 + c110
+                            + (condition) 
+                            : (c114 + c107 + c113_02 + c113_01 + c104_02 + c102_02 + c110)
+                  )
+                  ,direction = "both", parallel="snow",  ncpus=nC)
 
 
-# dtstep <- dtse[, c('totalvalue', 'finsqft', 'lotsize', 'condition',
-#                    'fullbath', 'fp', 'age', 'esScottsville', 'esMurray',
-#                    'centralair', 'esCrozet', 'esMeriwetherLewis',
-#                    'esRedHill', 'halfbath', 'msWalton', 'bedroom', 'c114')]
-# 
-# stepmodel <- gamlss(formula = totalvalue ~ . + condition:c114 - c114, 
-#                     family = LOGNO(mu.link = "identity", sigma.link = "log"),
-#                     data = dtstep, trace = FALSE)
+# BoxCox T
+m2_bct <- gamlss(formula = logtotalvalue ~ finsqft + fullbath +  
+         esScottsville + lotsize + fp + esMurray + condition +  
+         age + esMeriwetherLewis + esRedHill + centralair +  
+         esBrownsville + msWalton + esCrozet, family = BCT(mu.link = "identity",  
+                                                           sigma.link = "log", nu.link = "identity", tau.link = "log"),  
+       data = dtse, control = gamlss.control(n.cyc = 200),  
+       trace = FALSE)
+
+m2_tf2 <- gamlss(formula = logtotalvalue ~ finsqft + fullbath +  
+         esScottsville + lotsize + fp + condition + esMurray +  
+         age + esMeriwetherLewis + esRedHill + centralair +  
+         esBrownsville + msWalton + esCrozet, family = TF2(mu.link = "identity",  
+                                                           sigma.link = "log", nu.link = "logshiftto2"), data = dtse,  
+       control = gamlss.control(n.cyc = 200), trace = FALSE)
+
+m2_logno <- gamlss(formula = totalvalue ~ finsqft + lotsize + condition +  
+                     fullbath + fp + age + esScottsville + esMurray +  
+                     centralair + esBrownsville + esMeriwetherLewis +  
+                     esRedHill + halfbath + bedroom, family = LOGNO(mu.link = "identity",  
+                                                                    sigma.link = "log"), data = dtse, trace = FALSE)
 
 
-# modelo final
-stepmodel <- gamlss(formula = totalvalue ~ finsqft, family = PARETO(mu.link = "log"),  
-                    data = dtse, control = gamlss.control(n.cyc = 200),  
-                    trace = FALSE) 
+# SUMARIO ---- 
+summary(m2_bct)
+summary(m2_tf2)
+summary(m2_logno)
 
-summary(stepmodel)
-
-# gráficos de resíduo prontos, pode dar erro
-plot(stepmodel)
+# PLOTS ---- 
+plot(m2_bct)
+plot(m2_tf2)
+plot(m2_logno)
 
 # resíduos do ajuste
 {
-  res <- resid(stepmodel)
-  plot(fitted(stepmodel), res)
-  abline(0,0)
+  res <- resid(m2_logno)
+  fit <- fitted(m2_logno)
+  
+  data.frame(fit, res) %>%
+          ggplot(aes(fit,res)) + 
+          geom_point() + 
+          geom_hline(yintercept = 0)
 }
 
 # qqplot
@@ -155,7 +212,7 @@ plot(stepmodel)
 #histograma do log do preço e do preço estimado
 {
 h1 <- hist(dtse$logtotalvalue, breaks=200)
-h2 <- hist(predict(object = stepmodel, new_data = dtse$logtotaltotalvalue), breaks=200)
+h2 <- hist(predict(object = m2_bct, new_data = dtse$logtotalvalue), breaks=200)
 plot( h1, col=rgb(0,0,1,1/4), xlim=c(10,16), ylim=c(0,180))
 plot( h2, col=rgb(1,0,0,1/4), xlim=c(10,16), add=T)
 }
@@ -165,19 +222,12 @@ dtse$predicted <- predict(object = stepmodel, new_data = dtse$totaltotalvalue)
 ggplot(dtse) +
   geom_point(aes(x = totalvalue, y = predicted))
 
-# options(warn=-1)
-# # 10 fold cross validation of model
-# n <- dim(dtstep)[1]
-# k = 10
-# set.seed(2, sample.kind = "Rounding")
-# groups <- c(rep(1:k,floor(n/k)),1:(n-floor(n/k)*k))
-# set.seed(3, sample.kind = "Rounding")
-# cvgroups <- sample(groups,n)
-# predictvalsGLM <- rep(-1,n)
-# for (i in 1:k) {
-#   groupi <- (cvgroups == i)
-#   fit = gamlss(formula = totalvalue ~ ., 
-#                family = LOGNO2(mu.link = "log", sigma.link = "log"), data = dtstep[!groupi,])
-#   predictvalsGLM[groupi] = predict(object = fit, new_data = dtstep[groupi,], type = "response")
-# }
-# predictvalsGLM
+m2 <- gamlss(formula = logtotalvalue ~ finsqft + fullbath +  
+               esScottsville + lotsize + fp + condition + esMurray +  
+               age + esMeriwetherLewis + esRedHill + centralair +  
+               esBrownsville + msWalton + esCrozet, family = TF2(mu.link = "identity",  
+                                                                 sigma.link = "log", nu.link = "logshiftto2"), data = dtse,  
+             control = gamlss.control(n.cyc = 200), trace = FALSE)
+summary(m2)
+plot(m2)
+edf(m2)
